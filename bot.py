@@ -31,8 +31,8 @@ def main():
         image = data["feed"][0]["post"]["embed"]["images"][0]["fullsize"]
         print("contentID", contentID)
 
-        with open(fileName, "w") as file:
-            if(cacheID != contentID):
+        if(cacheID != contentID):
+            with open(fileName, "w") as file:
                 print("no match! posting new")
 
                 syncWebhook = SyncWebhook.from_url(webhook_url)
