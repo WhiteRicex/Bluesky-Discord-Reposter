@@ -2,10 +2,10 @@
 A simple script that will check an account and post any new images to a discord webhook
 
 ## required packages
-discord.py
-requests
-python-dotenv
-atproto
+- discord.py
+- requests
+- python-dotenv
+- atproto
 
 ## How to
 edit the .env file with your bluesky user and pass
