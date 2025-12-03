@@ -1,3 +1,5 @@
 {
-    "cid":"this will be overridden so with the newest post id so it doesnt post the same image twice when reopening the script"
+    "actors":
+    {
+    }
 }
