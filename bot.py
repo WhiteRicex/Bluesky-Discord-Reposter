@@ -14,7 +14,9 @@ client.login(os.getenv("BLUESKY_USERNAME"), os.getenv("BLUESKY_PASSWORD"))
 
 with open("settings.json", "r") as file:
     settingsData = json.load(file)
-    author = settingsData["author"]
+    actors = settingsData["actors"]
+    print("actors loaded: ", actors)
+
     webhook_url = settingsData["webhook"]
     
 url = "https://public.api.bsky.app/"
@@ -26,30 +28,37 @@ starttime = time.monotonic()
 def main():
     with open(contentIDFile, "r") as file:
         contentIDdata = json.load(file)
-        cacheID = contentIDdata["cid"]
-        print(cacheID)
+        print("checking caches: ", contentIDdata["actors"])
 
-    getAuthorFeed = requests.get(url + "/xrpc/app.bsky.feed.getAuthorFeed", params={"actor": author, "limit": "1", "filter": "posts_with_media"})
-    print("### RESPONSE CODE ###\n", getAuthorFeed.status_code)
+    for actor in actors:
+        print("checking actor: ", actor)
 
-    if(getAuthorFeed.status_code == 200):
-        print("get author feed ok!")
+        getAuthorFeed = requests.get(url + "/xrpc/app.bsky.feed.getAuthorFeed", params={"actor": actor, "limit": "1", "filter": "posts_with_media"})
+        print("### RESPONSE CODE ###\n", getAuthorFeed.status_code)
 
-        authorFeedData = getAuthorFeed.json()
+        if(getAuthorFeed.status_code == 200):
+            print("get author feed ok!")
 
-        contentID = authorFeedData["feed"][0]["post"]["cid"]
-        image = authorFeedData["feed"][0]["post"]["embed"]["images"][0]["fullsize"]
-        print("contentID", contentID)
+            authorFeedData = getAuthorFeed.json()
+            contentID = authorFeedData["feed"][0]["post"]["cid"]
+            image = authorFeedData["feed"][0]["post"]["embed"]["images"][0]["fullsize"]
+            print(image)
 
-        if(cacheID != contentID):
-            with open(contentIDFile, "w") as file:
-                print("no match! posting new")
+            print("contentID", contentID)
 
-                contentIDdata["cid"] = contentID
-                json.dump(contentIDdata, file)
+            # add missing key
+            if(contentIDdata["actors"].get(actor) == None):
+                contentIDdata["actors"][actor]=""
+            
+            if(contentIDdata["actors"][actor] != contentID):
+                with open(contentIDFile, "w") as file:
+                    print("no match! posting new")
 
-                syncWebhook = SyncWebhook.from_url(webhook_url)
-                syncWebhook.send(image)
+                    contentIDdata["actors"][actor] = contentID
+                    json.dump(contentIDdata, file)
+
+                    syncWebhook = SyncWebhook.from_url(webhook_url)
+                    syncWebhook.send(image)
 
 while(True):
     main()
