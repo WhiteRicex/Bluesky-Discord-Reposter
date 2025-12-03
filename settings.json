@@ -1,4 +1,4 @@
 {
-    "author":"whitericex.bsky.social",
+    "actors":["whitericex.bsky.social"],
     "webhook":"https://discord.com/api/webhooks/12345/12345"
 }
