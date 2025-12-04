@@ -2,7 +2,9 @@ import os
 import requests
 import time
 import json
+import ffmpeg
 
+import discord
 from discord import SyncWebhook
 
 from atproto import Client
@@ -41,8 +43,28 @@ def main():
 
             authorFeedData = getAuthorFeed.json()
             contentID = authorFeedData["feed"][0]["post"]["cid"]
-            image = authorFeedData["feed"][0]["post"]["embed"]["images"][0]["fullsize"]
-            print(image)
+            
+            send_image = True
+
+            # check is image
+            if(authorFeedData["feed"][0]["post"]["embed"]["$type"] == "app.bsky.embed.images#view"):
+                print("image!")
+                image = authorFeedData["feed"][0]["post"]["embed"]["images"][0]["fullsize"]
+            else:
+                print("video!")
+                send_image = False
+
+                if(os.path.isfile("video.mp4")):
+                    os.remove("video.mp4")
+
+                video_url = authorFeedData["feed"][0]["post"]["embed"]["playlist"]
+
+                stream = ffmpeg.input(video_url)
+                stream = ffmpeg.output(stream, "video.mp4")
+                ffmpeg.run(stream)
+
+                with open("video.mp4", "rb") as f:
+                    image = discord.File(f)
 
             print("contentID", contentID)
 
@@ -58,7 +80,11 @@ def main():
                     json.dump(contentIDdata, file)
 
                     syncWebhook = SyncWebhook.from_url(webhook_url)
-                    syncWebhook.send(image)
+                    
+                    if(send_image):
+                        syncWebhook.send(image)
+                    else:
+                        syncWebhook.send(file=image)
 
 while(True):
     main()
