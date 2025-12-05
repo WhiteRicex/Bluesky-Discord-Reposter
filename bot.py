@@ -44,27 +44,23 @@ def main():
             authorFeedData = getAuthorFeed.json()
             contentID = authorFeedData["feed"][0]["post"]["cid"]
             
-            send_image = True
-
-            # check is image
+            # check for image
             if(authorFeedData["feed"][0]["post"]["embed"]["$type"] == "app.bsky.embed.images#view"):
                 print("image!")
-                image = authorFeedData["feed"][0]["post"]["embed"]["images"][0]["fullsize"]
-            else:
+                for idx, i in enumerate(authorFeedData["feed"][0]["post"]["embed"]["images"]):
+                    img_data = requests.get(i["fullsize"]).content
+                    with open("output/"+str(idx)+".jpeg", 'wb') as f:
+                        f.write(img_data)
+            
+            # check for video
+            if(authorFeedData["feed"][0]["post"]["embed"]["$type"] == "app.bsky.embed.video#view"):
                 print("video!")
-                send_image = False
-
-                if(os.path.isfile("video.mp4")):
-                    os.remove("video.mp4")
 
                 video_url = authorFeedData["feed"][0]["post"]["embed"]["playlist"]
 
                 stream = ffmpeg.input(video_url)
-                stream = ffmpeg.output(stream, "video.mp4")
+                stream = ffmpeg.output(stream, "output/video.mp4")
                 ffmpeg.run(stream)
-
-                with open("video.mp4", "rb") as f:
-                    image = discord.File(f)
 
             print("contentID", contentID)
 
@@ -80,13 +76,24 @@ def main():
                     json.dump(contentIDdata, file)
 
                     syncWebhook = SyncWebhook.from_url(webhook_url)
-                    
-                    if(send_image):
-                        syncWebhook.send(image)
-                    else:
-                        syncWebhook.send(file=image)
+
+                    files = [discord.File("output/"+str(f)) for f in os.listdir("output")]
+                    syncWebhook.send(files=files)
+
+            #clean up
+            if(os.path.isdir("output")):
+                os.system("rm -rf output")
+                
+            os.mkdir("output")
+
+# check if we had leftover output 
+if(os.path.isdir("output")):
+    os.system("rm -rf output")
+
+os.mkdir("output")
 
 while(True):
     main()
+
     print("tick")
     time.sleep(60.0 - ((time.monotonic() - starttime) % 60.0))
